@@ -22,6 +22,7 @@
 
 (defn ^:no-doc render-vega-lite
   ([spec elem]
+   (log "render-vega-lite begin")
    (when spec
      (let [spec (clj->js spec)
            opts {:renderer "canvas"
@@ -31,10 +32,12 @@
        (log vega-spec)
        (-> (js/vegaEmbed elem spec (clj->js opts))
            (.then (fn [res]
+                    (log "vegaEmbed completed...")
                     #_(log res)
                     (. js/vegaTooltip (vegaLite (.-view res) spec))))
            (.catch (fn [err]
-                     (log err))))))))
+                     (log err))))
+       (log "render-vega-lite end")))))
 
 (defn render-vega [spec elem]
   (when spec
@@ -51,6 +54,7 @@
 (defn vega-lite
   "Reagent component that renders vega-lite."
   [spec]
+  (log "reagent vega-lite")
   (r/create-class
    {:display-name "vega-lite"
     :component-did-mount (fn [this]
@@ -80,11 +84,14 @@
   ;; prewalk spec, rendering special hiccup tags like :vega and :vega-lite, and potentially other composites,
   ;; rendering using the components above. Leave regular hiccup unchanged).
   ;; TODO finish writing; already hooked in below so will break now
-  (clojure.walk/prewalk
-    (fn [x] (if (and (coll? x) (#{:vega :vega-lite} (first x)))
-              [(case (first x) :vega vega :vega-lite vega-lite)
-               (reduce merge (rest x))]
-              x))
-    spec))
+  (log "starting view-spec...")
+  (let [retval (clojure.walk/prewalk
+                 (fn [x] (if (and (coll? x) (#{:vega :vega-lite} (first x)))
+                           [(case (first x) :vega vega :vega-lite vega-lite)
+                            (reduce merge (rest x))]
+                           x))
+                 spec)]
+    (log "ending view-spec...")
+    retval))
 
 

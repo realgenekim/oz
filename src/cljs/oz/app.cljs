@@ -10,13 +10,14 @@
   (:require-macros
    [cljs.core.async.macros :as asyncm :refer (go go-loop)]))
 
-(timbre/set-level! :info)
+;(timbre/set-level! :info)
+(timbre/set-level! :debug)
 (enable-console-print!)
 
 (defn- log [a-thing]
   (.log js/console a-thing))
 
-(defonce app-state (r/atom {:text "Pay no attention to the man behind the curtain!"
+(defonce app-state (r/atom {:text "YIYI! Pay no attention to the man behind the curtain!"
                             :view-spec nil}))
 
 (let [packer (sente-transit/get-transit-packer)
@@ -37,10 +38,12 @@
 
 (defmethod -event-msg-handler :default
   [{:as ev-msg :keys [event]}]
-  (debugf "Unhandled event: %s" event))
+  (debugf "Unhandled event: %s" event)
+  (log (str "Unhandled event: " event)))
 
 (defmethod -event-msg-handler :chsk/state
   [{:as ev-msg :keys [?data]}]
+  (log "chsk/state")
   (let [[old-state-map new-state-map] (have vector? ?data)]
     (if (:first-open? new-state-map)
       (debugf "Channel socket successfully established!: %s" ?data)
@@ -48,6 +51,7 @@
 
 (defmethod -event-msg-handler :chsk/handshake
   [{:as ev-msg :keys [?data]}]
+  (log "handshake")
   (let [[?uid ?csrf-token ?handshake-data] ?data]
     (debugf "Handshake: %s" ?data)))
 
@@ -57,10 +61,16 @@
 ;; this is where we'll inject it.
 (defmethod -event-msg-handler :chsk/recv
   [{:as ev-msg :keys [?data]}]
+  (log "chsk/recv: where action happens")
   (let [[id msg] ?data]
+    (log (str "id: " id))
+    (log (str "msg: " msg))
     (case id
       :oz.core/view-spec (swap! app-state assoc :view-spec msg)
-      (debugf "Push event from server: %s" ?data))))
+      (do
+        (log "Push event from server: ")
+        (log ?data)
+        (debugf "Push event from server: %s" ?data)))))
 
 
 (def router_ (atom nil))
@@ -73,24 +83,26 @@
   (reset! router_ (sente/start-client-chsk-router! ch-chsk event-msg-handler)))
 
 (defn start! []
-  (start-router!))
+  (start-router!)
+  (log "GK starting!"))
 
 
 
 (defn application [app-state]
+  (log "GK app")
   (if-let [spec (:view-spec @app-state)]
     [core/view-spec spec]
     [:div
-      [:h1 "Waiting for first spec to load..."]
+      [:h1 "XXX Waiting for first spec to load..."]
       [:p "This may take a second the first time if you call a plot function, unless you first call " [:code '(oz/start-plot-server!)] "."]]))
 
 (r/render-component [application app-state]
                     (. js/document (getElementById "app")))
 
-(defn on-js-reload []
+(defn on-js-reload [])
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
-  )
+
 
 (start!)

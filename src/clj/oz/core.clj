@@ -90,6 +90,7 @@
                 mode :vega-lite}}]
   ;; Update spec opts, then send view
   (let [spec (merge-opts spec opts)]
+    (println "v! bytes: " (count (str spec)))
     (view! [mode spec] :host host :port port)))
 
 
