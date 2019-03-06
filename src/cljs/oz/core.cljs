@@ -27,10 +27,12 @@
      (let [spec (clj->js spec)
            opts {:renderer "canvas"
                  :mode "vega-lite"}
+           jsopts (clj->js opts)
            vega-spec (. js/vl (compile spec))]
        (log "Vega-lite translates to:")
        (log vega-spec)
-       (-> (js/vegaEmbed elem spec (clj->js opts))
+       (log "calling js/vegaEmbed...")
+       (-> (js/vegaEmbed elem spec jsopts)
            (.then (fn [res]
                     (log "vegaEmbed completed...")
                     #_(log res)

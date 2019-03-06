@@ -17,6 +17,10 @@
 (defn- log [a-thing]
   (.log js/console a-thing))
 
+(defn truncate-str
+  [s n]
+  (apply str (take n s)))
+
 (defonce app-state (r/atom {:text "YIYI! Pay no attention to the man behind the curtain!"
                             :view-spec nil}))
 
@@ -64,12 +68,12 @@
   (log "chsk/recv: where action happens")
   (let [[id msg] ?data]
     (log (str "id: " id))
-    (log (str "msg: " msg))
+    (log (str "msg: " (truncate-str msg 240)))
     (case id
       :oz.core/view-spec (swap! app-state assoc :view-spec msg)
       (do
         (log "Push event from server: ")
-        (log ?data)
+        (log (truncate-str ?data 80))
         (debugf "Push event from server: %s" ?data)))))
 
 
