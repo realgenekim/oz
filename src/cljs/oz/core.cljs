@@ -40,7 +40,7 @@
    (when spec
      (let [
            jsspec (clj->js spec)
-           barespec (dissoc-in spec [:data :values])
+           barespec (assoc-in spec [:data :values] [])
            opts {:renderer "canvas"
                  :mode "vega-lite"}
            vega-spec (. js/vl (compile (clj->js barespec)))]
@@ -56,15 +56,24 @@
                     ; https://observablehq.com/@ijlyttle/using-changesets-with-vega-lite
                     ;
                     (log "vegaEmbed completed...")
+                    (log res)
                     ; res.view.change('table', changeSet).run();
-                    (log (.. js/vegaEmbed -vega -changeset))
-                    (log "creating changeset")
-                    (let [changeset ((.. js/vegaEmbed -vega -changeset))]
-                      (. changeset insert (clj->js (:values (:data spec))))
-                      (log "changeset: ")
-                      (log changeset)
-                      (log (.. res -view -change))
-                      ((.. res -view -change) "table" changeset))
+                    ;(log (.. js/vegaEmbed -vega -changeset))
+                    ;(log "creating changeset")
+                    ;(let [changeset ((.. js/vegaEmbed -vega -changeset))]
+                    ;  (. changeset insert (clj->js (:values (:data spec))))
+                    ;  (log "changeset: ")
+                    ;  (log changeset)
+                    ;  ((.. res -view -change) "table" changeset))
+
+                    (log (.. res -view -insert))
+                    (let [newdata (:values (:data spec))
+                          ;_       (log newdata)
+                          ins     (.insert (.. res -view) "table"
+                                    (clj->js newdata))]
+
+                      (. ins runAsync))
+
                     ;((.. res -view -change) "table" (clj->js spec))
                     ;(. js/view)
                     (log res)
