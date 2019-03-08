@@ -3,13 +3,14 @@
 # Sane error handling settings (stop running for most errors)
 set -euf -o pipefail
 
-
+#
 
 if ! generate-extern -h > /dev/null
 then
   echo "You need to have generate-extern installed in order to run this script"
   echo "If you'd like to install it, please try first running"
-  echo "  npm install externs-generator"
+  echo "  npm install -g externs-generator"
+  echo "  brew install wget md5sum"
   exit
 fi
 
@@ -25,24 +26,25 @@ fi
 
 # For latest releases, see:
 # https://github.com/vega/vega/releases
-v_version="4.3.0"
+v_version="5.1.0"
 v_build_version="0"
 
 # https://github.com/vega/vega-lite/releases
-vl_version="3.0.0-rc8"
+vl_version="3.0.0-rc14"
 vl_build_version="0"
 
 # https://github.com/vega/vega-embed/releases
-ve_version="3.23.1"
+ve_version="4.0.0-rc1"
 ve_build_version="0"
 
 # https://github.com/vega/vega-tooltip/releases
-vt_version="0.13.0"
+vt_version="0.16.0"
 vt_build_version="0"
 
 
 # store current directory
-oz_dir=$(readlink -f .)
+oz_dir=`pwd`
+# $(readlink -f .)
 
 # Set packages path
 CLJSJS_PACKAGES_PATH="$oz_dir/cljsjs-packages"
@@ -52,11 +54,12 @@ echo "Using cljsjs/packages path $CLJSJS_PACKAGES_PATH"
 # If the directory doesn't exist, clone
 if [ ! -d $CLJSJS_PACKAGES_PATH ]
 then
-  git clone git@github.com:cljsjs/packages cljsjs-packages
+  # use http:, not git:, to avoid authenticating
+  git clone http://github.com/cljsjs/packages cljsjs-packages
 fi
 
 
-# Change directories to our pacakges path
+# Change directories to our packages path
 cd $CLJSJS_PACKAGES_PATH
 
 # Make sure we're up to date, just in case
@@ -85,8 +88,9 @@ zipfile=vega-v$v_version.zip
 rm -f vega.zip
 
 # now actually download the file and compute checksums
-wget https://github.com/vega/vega/releases/download/v$v_version/vega.zip -O $zipfile
-v_checksum=$(md5sum $zipfile | grep -o "^[a-z0-9]*")
+#   GK: found the file here: https://github.com/vega/vega/archive/v5.1.0.zip
+wget https://github.com/vega/vega/archive/v$v_version.zip -O $zipfile
+v_checksum=$(md5 $zipfile | grep -o "^[a-z0-9]*")
 echo vega checksum $v_checksum
 
 # unzip and generate externs
