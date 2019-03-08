@@ -19,23 +19,55 @@
 (defn- ^:no-doc log [a-thing]
   (.log js/console a-thing))
 
+(defn dissoc-in
+  "Dissociates an entry from a nested associative structure returning a new
+  nested structure. keys is a sequence of keys. Any empty maps that result
+  will not be present in the new structure."
+  [m [k & ks :as keys]]
+  (if ks
+    (if-let [nextmap (get m k)]
+      (let [newmap (dissoc-in nextmap ks)]
+        (if (seq newmap)
+          (assoc m k newmap)
+          (dissoc m k)))
+      m)
+    (dissoc m k)))
+
 
 (defn ^:no-doc render-vega-lite
   ([spec elem]
    (log "render-vega-lite begin")
    (when spec
-     (let [spec (clj->js spec)
+     (let [
+           jsspec (clj->js spec)
+           barespec (dissoc-in spec [:data :values])
            opts {:renderer "canvas"
                  :mode "vega-lite"}
-           jsopts (clj->js opts)
-           vega-spec (. js/vl (compile spec))]
+           vega-spec (. js/vl (compile (clj->js barespec)))]
+
+
        (log "Vega-lite translates to:")
        (log vega-spec)
+       (log (str "barespec: " (pr-str barespec)))
        (log "calling js/vegaEmbed...")
-       (-> (js/vegaEmbed elem spec jsopts)
+       (-> (js/vegaEmbed elem (clj->js barespec) (clj->js opts))
            (.then (fn [res]
+                    ; as per Christopher suggestion: now call view/change with full data
+                    ; https://observablehq.com/@ijlyttle/using-changesets-with-vega-lite
+                    ;
                     (log "vegaEmbed completed...")
-                    #_(log res)
+                    ; res.view.change('table', changeSet).run();
+                    (log (.. js/vegaEmbed -vega -changeset))
+                    (log "creating changeset")
+                    (let [changeset ((.. js/vegaEmbed -vega -changeset))]
+                      (. changeset insert (clj->js (:values (:data spec))))
+                      (log "changeset: ")
+                      (log changeset)
+                      (log (.. res -view -change))
+                      ((.. res -view -change) "table" changeset))
+                    ;((.. res -view -change) "table" (clj->js spec))
+                    ;(. js/view)
+                    (log res)
                     (. js/vegaTooltip (vegaLite (.-view res) spec))))
            (.catch (fn [err]
                      (log err))))
@@ -48,7 +80,7 @@
                 :mode "vega"}]
       (-> (js/vegaEmbed elem spec (clj->js opts))
           (.then (fn [res]
-                   #_(log res)
+                   (log res)
                    (. js/vegaTooltip (vega (.-view res) spec))))
           (.catch (fn [err]
                     (log err)))))))
