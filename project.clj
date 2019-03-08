@@ -54,6 +54,10 @@
                                    :asset-path "js/compiled/out"
                                    :output-to "resources/oz/public/js/compiled/oz.js"
                                    :output-dir "resources/oz/public/js/compiled/out"
+                                   :npm-deps {:vega "5.1.0"
+                                              :vega-lite "3.0.0-rc14"
+                                              :vega-embed "4.0.0-rc1"
+                                              :vega-tooltip "0.16.0"}
                                    :source-map-timestamp true
                                    :preloads [devtools.preload]}}
                        {:id "min"
